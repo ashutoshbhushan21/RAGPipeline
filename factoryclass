@@ -1,0 +1,44 @@
+
+from llm_engine import LLMEngine, AsyncLLMEngine, VLLMEngine, AsyncVLLMEngine, AzureOpenAIEngine, AsyncAzureOpenAIEngine, CTranslateLLMEngine, AsyncCTranslateLLMEngine
+class LLMEngineFactory:
+    @staticmethod
+    def get_llm_engine(engine_type: str, async_mode: bool = False):
+        if engine_type == "VLLM":
+            return AsyncVLLMEngine() if async_mode else VLLMEngine()
+        elif engine_type == "AzureOpenAI":
+            return AsyncAzureOpenAIEngine() if async_mode else AzureOpenAIEngine()
+        elif engine_type == "Ctranslate2":
+            return AsyncCTranslateLLMEngine() if async_mode else CTranslateLLMEngine()
+        elif engine_type == "local":
+            return AsyncLLMEngine() if async_mode else LLMEngine()
+        else:
+            raise ValueError("Unsupported engine type")
+
+
+
+# # Getting a synchronous VLLM engine
+# vllm_engine = LLMEngineFactory.get_llm_engine("VLLM", async_mode=False)
+# # Use the engine
+# vllm_engine.generate("Hello, world!")
+
+# # Getting an asynchronous Azure OpenAI engine
+# azure_engine = LLMEngineFactory.get_llm_engine("AzureOpenAI", async_mode=True)
+# # Use the engine
+# await azure_engine.generate_async("Hello, async world!")
+
+
+class RetrieverFactory:
+    @staticmethod
+    def get_retriever(retriever_type: str):
+        if retriever_type == "NoRetriever":
+            return NoRetrieverEngine()
+        else:
+            raise ValueError("Unsupported retriever type")
+
+class RouterFactory:
+    @staticmethod
+    def get_router(router_type: str):
+        if router_type == "NoRouter":
+            return NoRouter()
+        else:
+            raise ValueError("Unsupported router type")
