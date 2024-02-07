@@ -1,0 +1,154 @@
+from pydantic import BaseModel
+from document_store import DataStore, JSONDataStore
+from abc import ABC, abstractmethod
+import aiohttp
+
+class DataClassModel(BaseModel):
+    pass
+
+class ChunkModel(BaseModel):
+    pass
+
+class DocStore(JSONDataStore):
+    def __init__(self, json_file_path: str, read_only: bool = False):
+        super().__init__(json_file_path, DataClassModel, read_only)
+
+class ChunkStore(JSONDataStore):
+    def __init__(self, json_file_path: str, read_only: bool = False):
+        super().__init__(json_file_path, ChunkModel, read_only)
+
+class LLMEngine:
+    def __init__(self) -> None:
+        pass
+    def generate(self, prompt:str, stream: bool = False):
+        response =aiohttp.post("http://localhost:8000/getllmoutput", json = {"prompt": prompt}, stream = stream)
+        return response.json()
+
+class AsyncLLMEngine:
+    def __init__(self) -> None:
+        pass
+
+class vLLMAsyncEngine(AsyncLLMEngine):
+    def __init__(self) -> None:
+        pass
+
+class AzureOpenAIEngine(AsyncLLMEngine):
+    def __init__(self) -> None:
+        pass
+
+class PersonaInfo:
+    def __init__(self) -> None:
+        pass
+
+class SessionInfo:
+    def __init__(self) -> None:
+        pass
+
+class BaseQueryProcessor():
+    def __init__(self, llm_engine: LLMEngine):
+        self._llm_engine = llm_engine
+
+    def process_query(self, query: str):
+        return query
+
+def InputData():
+    query: str
+    persona: PersonaInfo
+    info: SessionInfo
+
+# @app.post("/getragnaroutput")
+# def rag_engine_endpoint(inputdata: InputData):
+#     pass
+    
+
+class BaseRouter(ABC):
+    @abstractmethod
+    def route(self, query: str, persona: PersonaInfo) -> list:
+        pass
+
+class NoRouter(BaseRouter):
+    def route(self, query: str, persona: PersonaInfo) -> list:
+        return []
+    
+class BaseRetrieverEngine(ABC):
+    @abstractmethod
+    def retrieve(self, query: str, filters: list, sessioninfo: SessionInfo) -> list:
+        pass
+
+class NoRetrieverEngine(BaseRetrieverEngine):
+    def retrieve(self, query: str, filters: list, sessioninfo: SessionInfo) -> list:
+        return []
+    
+
+
+class BasePromptTemplate(ABC):
+    @abstractmethod
+    def get_prompt(self, query: str, context: str, sessioninfo: SessionInfo) -> str:
+        pass
+
+class LlamaPromptTemplate(BasePromptTemplate):
+    def __init__(self, system_prompt:str, user_prompt:str) -> None:
+        self.system_prompt = system_prompt
+        self.user_prompt = user_prompt
+    def get_prompt(self, query: str, context: str, sessioninfo: SessionInfo) -> str:
+        string_return = "System Prompt: " + self.system_prompt + "Context: "+ context+ "Query: " + query + "User Prompt: " + self.user_prompt 
+        return string_return
+
+class RAGEngine:
+    def __init__(self, docstore: DocStore, chunkstore: ChunkStore, queryprocessor: BaseQueryProcessor, router: BaseRouter, retrieverengine: BaseRetrieverEngine, llmengine: LLMEngine, prompttemplate: BasePromptTemplate) -> None:
+        self._docstore = docstore
+        self.chunkstore = chunkstore
+        self.queryprocessor = queryprocessor
+        self.router = router
+        self.retrieverengine = retrieverengine
+        self.llmengine = llmengine
+        self.prompttemplate = prompttemplate
+
+
+    def execute(self, query, persona: PersonaInfo, sessioninfo: SessionInfo, stream: bool = False):
+        query = self.queryprocessor.process_query(query)
+        filters = self.router.route(query, persona)
+        scores, chunkids  = self.retrieverengine.retrieve(query, filters, sessioninfo)
+        yield scores, chunkids
+        if stream == True:
+            generator = self.strategydecider(query, scores, chunkids, filters, sessioninfo, stream)
+            for text in generator:
+                yield text
+        else:
+            yield self.strategydecider(query, scores, chunkids, filters, sessioninfo, stream)
+
+    def strategy_decider(self, query, scores, chunkids, filters, sessioninfo, stream):
+        condition1  = "Some Condition based on scores and chunkids to decide which strategy to use."
+        if condition1:
+            #Use Strategy 1
+            if stream == True:
+                generator = self.strategy1(query, scores, chunkids, filters, sessioninfo, stream = True)
+                for item in generator:
+                    yield item
+            else:
+                return self.strategy1(query, scores, chunkids, filters, sessioninfo, stream= False)
+        else:
+            #Use Strategy 2
+            if stream == True:
+                generator = self.strategy2(query, scores, chunkids, filters, sessioninfo, stream = True)
+                for item in generator:
+                    yield item
+            else:
+                return self.strategy2(query, scores, chunkids, filters, sessioninfo, stream= False)
+
+    def strategy1(self, query, scores, chunkids, stream):
+        #Get the Chunks from ChunkStore based on ChunkIds
+        chunk_text_list = []
+        for chunkid in chunkids:
+            chunk_text_list.append(self.chunkstore.get(chunkid))
+        prompt =self.prompttemplate.get_prompt()
+        if stream == True:
+            for chunk in  self.llm_engine.generate(prompt, stream = True):
+                yield chunk
+
+        else:
+            return self.llm_engine.generate(prompt, stream = False)
+    def strategy2(self, query, scores, chunkids, stream):
+        #Get the Documents from DocStore based on ChunkIds
+        pass
+
