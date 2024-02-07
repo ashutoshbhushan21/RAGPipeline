@@ -1,0 +1,95 @@
+import json 
+from abc import ABC, abstractmethod
+from pydantic import BaseModel
+
+class DataStore(ABC):
+    @abstractmethod
+    def get(self, data_id: str):
+        pass
+
+    @abstractmethod
+    def insert(self, data_id: str, contents: dict()):
+        pass
+
+    @abstractmethod
+    def update(self, data_id: str, contents: dict()):
+        pass
+
+    @abstractmethod
+    def delete(self, data_id: str):
+        pass    
+
+
+class JSONDataStore(DataStore):
+    def __init__(
+        self,
+        json_file_path: str,
+        data_model: BaseModel,
+        read_only: bool = False,
+    ):
+        self._read_only = read_only
+        self._json_file_path = json_file_path
+        self._data_model = data_model
+
+        self._data_store = self._load_and_convert()
+
+    def _load_and_convert(self):
+        mode = 'r' if self._read_only else 'w'
+
+        with open(self._json_file_path, mode, encoding = 'utf-8') as file:
+            data = json.load(file)
+
+        data_store = dict()
+        for data_id in data:
+            data_store[data_id] = self._data_model.parse_obj(data[data_id])
+        return data_store
+
+    def _check_read_only(self):
+        if self._read_only:
+            raise ValueError(f"{self.__class__.__name__} is in read-only mode")
+
+    def get(
+        self,
+        data_id: str
+    ):
+        return self._data_store.get(data_id)
+
+    def insert(self, data_id: str, contents: dict()):
+        self._check_read_only()
+
+        if self._data_store.get(data_id) is None:
+            self._data_store[data_id] = self._data_model.parse_obj(contents)
+        else:
+            raise KeyError(f"Data with data ID {data_id} already exist in Data Store.")
+
+    def update(self, data_id: str, contents: dict()):
+        self._check_read_only()
+
+        if self._data_store.get(data_id):
+            old_contents = self._data_store.get(data_id).dict()
+            old_contents.update(contents)
+            self._data_store[data_id] = self._data_model.parse_obj(old_contents)
+        else:
+            raise KeyError(f"No data with ID {data_id} exists in Data Store.")
+
+
+    def delete(self, data_id: str):
+        self._check_read_only()
+
+        if self._data_store.get(data_id):
+            del self._data_store[data_id]
+        else:
+            raise KeyError(f"No data with ID {data_id} exists in Data Store.")
+    
+    def persist(self, path: str = None):
+        self._check_read_only()
+
+        data = dict()
+        for data_id in self._data_store:
+            data[data_id] = self._data_store[data_id].dict()
+        
+        if not path:
+            path = self._json_file_path
+        
+        with open(path, 'w', encoding = 'utf-8') as file:
+            json.dump(data, file)
