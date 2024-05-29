@@ -1,9 +1,9 @@
 import re
 
-# Define the regex pattern with named groups and handling for trailing punctuation including question marks
+# Define the regex pattern with named groups and handling for multiple word variations and trailing punctuation including question marks
 pattern = re.compile(
     r'\b(?P<apac>(?i:apac|asia[\s-]?pacific))\b[.,;!?]?\b|'
-    r'\b(?P<emea>(?i:emea|europe[\s-]?middle[\s-]?east[\s-]?africa))\b[.,;!?]?\b|'
+    r'\b(?P<emea>(?i:emea|(?:middle|bigger|smaller)[\s-]?(?:east|west|north|south)[\s-]?(?:africa|europe)))\b[.,;!?]?\b|'
     r'\b(?P<latam>(?i:latam|latin[\s-]?america))\b[.,;!?]?\b|'
     r'\b(?P<na>(?i:\bna\b|north[\s-]?america))\b[.,;!?]?\b'
 )
@@ -14,6 +14,8 @@ queries = [
     "Our operations in Asia-Pacific are growing.",
     "The EMEA region is crucial.",
     "Europe-Middle-East-Africa strategy is in place.",
+    "Europe-Middle-West-Africa strategy is in place.",
+    "Europe-Bigger-North-Europe strategy is in place.",
     "LATAM market is booming.",
     "Latin America is a key area.",
     "NA market has potential.",
@@ -26,17 +28,11 @@ queries = [
     "Will LATAM be the next big market?"
 ]
 
-# Function to get standardized match
+# Function to standardize matches
 def standardize_match(match):
-    if match.group('apac'):
-        return 'APAC'
-    elif match.group('emea'):
-        return 'EMEA'
-    elif match.group('latam'):
-        return 'LATAM'
-    elif match.group('na'):
-        return 'NA'
-    return match.group(0)  # Fallback to original match if none of the groups matched
+    if match.lastgroup:
+        return match.lastgroup.upper()
+    return match.group(0)
 
 # Process each query
 for query in queries:
