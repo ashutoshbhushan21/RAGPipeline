@@ -3,7 +3,7 @@ import re
 # Define the regex pattern with named groups and handling for multiple word variations and trailing punctuation including question marks
 pattern = re.compile(
     r'\b(?P<apac>(?i:apac|asia[\s-]?pacific))\b[.,;!?]?\b|'
-    r'\b(?P<emea>(?i:emea|(?:middle|bigger|smaller)[\s-]?(?:east|west|north|south)[\s-]?(?:africa|europe)))\b[.,;!?]?\b|'
+    r'\b(?P<emea>(?i:emea|(?:(?:middle|bigger|smaller)[\s-]?)?(?:east|west|north|south)[\s-]?(?:africa|europe)))\b[.,;!?]?\b|'
     r'\b(?P<latam>(?i:latam|latin[\s-]?america))\b[.,;!?]?\b|'
     r'\b(?P<na>(?i:\bna\b|north[\s-]?america))\b[.,;!?]?\b'
 )
@@ -16,6 +16,7 @@ queries = [
     "Europe-Middle-East-Africa strategy is in place.",
     "Europe-Middle-West-Africa strategy is in place.",
     "Europe-Bigger-North-Europe strategy is in place.",
+    "Europe-East-Europe strategy is in place.",
     "LATAM market is booming.",
     "Latin America is a key area.",
     "NA market has potential.",
