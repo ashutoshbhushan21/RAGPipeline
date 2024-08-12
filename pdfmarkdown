@@ -27,4 +27,16 @@ def text_and_tables_to_markdown(text, tables):
     
     return markdown_text + "\n\n" + markdown_tables
 
-def pdf_to_markdown(pdf
+def pdf_to_markdown(pdf_path, md_path):
+    # Extract text and tables from PDF
+    pdf_text, pdf_tables = extract_text_and_tables(pdf_path)
+    
+    # Convert text and tables to Markdown
+    markdown_content = text_and_tables_to_markdown(pdf_text, pdf_tables)
+    
+    # Save Markdown to file
+    with open(md_path, 'w') as f:
+        f.write(markdown_content)
+
+# Convert 'file.pdf' to 'file.md'
+pdf_to_markdown('file.pdf', 'file.md')
