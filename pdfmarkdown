@@ -1,0 +1,30 @@
+import pdfplumber
+from tabulate import tabulate
+from markdownify import markdownify as md
+
+def extract_text_and_tables(pdf_path):
+    text = ""
+    tables = []
+    
+    with pdfplumber.open(pdf_path) as pdf:
+        for page in pdf.pages:
+            text += page.extract_text() + "\n"
+            
+            # Extract tables on each page
+            page_tables = page.extract_tables()
+            for table in page_tables:
+                tables.append(table)
+    
+    return text, tables
+
+def text_and_tables_to_markdown(text, tables):
+    markdown_text = md(text)
+    
+    # Convert each table to Markdown
+    markdown_tables = ""
+    for table in tables:
+        markdown_tables += tabulate(table, tablefmt="pipe") + "\n\n"
+    
+    return markdown_text + "\n\n" + markdown_tables
+
+def pdf_to_markdown(pdf
